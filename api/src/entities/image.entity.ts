@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm'
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm'
+
+import { Mission } from './mission.entity'
 
 @Entity('images')
 export class Image {
@@ -7,8 +15,13 @@ export class Image {
 
   @Column({
     name: 'data',
-    type: 'blob',
-    nullable: true,
+    type: 'bytea',
   })
-  public binaryData: Buffer
+  public data: Buffer
+
+  @ManyToOne(() => Mission, (mission) => mission.images, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'mission_id' })
+  public mission: Mission
 }

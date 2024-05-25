@@ -1,19 +1,16 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { MqttClient, connect, PacketCallback } from 'mqtt'
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import fs from 'fs'
-import path from 'path'
+import { MqttClient, PacketCallback, connect } from 'mqtt'
 
 export type MqttSubscribeCallback = (data: Buffer) => void
 
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
   private _client: MqttClient
+  private readonly _logger = new Logger(MqttService.name)
 
-  constructor(
-    private readonly _configService: ConfigService,
-  ) {
-  }
+  constructor(private readonly _configService: ConfigService) {}
 
   public publish(
     topic: string,
@@ -25,12 +22,11 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
   public subscribe(topic: string, callback: MqttSubscribeCallback): void {
     this._client
-      .subscribe(topic, err => {
-        if (err) console.log('subscribe error', err)
+      .subscribe(topic, (err) => {
+        if (err) this._logger.log('subscribe error', err)
       })
       .on('message', (_topic, data) => {
-        if (_topic === topic)
-          callback(data)
+        if (_topic === topic) callback(data)
       })
   }
 
@@ -42,15 +38,17 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       protocol: this._configService.get('MQTT_PROTOCOL'),
       password: this._configService.get('MQTT_PASSWORD'),
       username: this._configService.get('MQTT_USER'),
-      cert: fs.readFileSync(this._configService.get('MQTT_CERT_PATH')),
+      cert: this._configService.get('MQTT_CERT_PATH')
+        ? fs.readFileSync(this._configService.get('MQTT_CERT_PATH'))
+        : undefined,
     })
 
     this._client
       .on('connect', () => {
-        console.log('mqtt connected')
+        this._logger.log('mqtt connected')
       })
       .on('error', (error) => {
-        console.log('mqtt error', error)
+        this._logger.log('mqtt error', error)
       })
   }
 
