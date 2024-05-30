@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
-import { CreateDroneDto } from '@/dto'
+import { CommandDto, CreateDroneDto } from '@/dto'
 import { Drone, Image, Mission } from '@/entities'
+import { MqttService } from '@/mqtt/mqtt.service'
+import { MqttTopic } from '@/mqtt/mqtt.constants'
 
 @Injectable()
 export class DroneService {
@@ -14,6 +16,7 @@ export class DroneService {
     private readonly _imagesRepo: Repository<Image>,
     @InjectRepository(Mission)
     private readonly _missionsRepo: Repository<Mission>,
+    private readonly _mqttService: MqttService
   ) {}
 
   public async getDrones(): Promise<Drone[]> {
@@ -44,5 +47,23 @@ export class DroneService {
 
     await this._missionsRepo.save(mission)
     await this._imagesRepo.save(image)
+  }
+
+  public async deleteDrone(droneId: string): Promise<void> {
+    await this._dronesRepo.delete(droneId)
+  }
+
+  public async getMissions(droneId: string): Promise<Mission[]> {
+    return this._missionsRepo.find({
+      where: {
+        drone: {
+          id: droneId
+        }
+      }
+    })
+  }
+
+  public async postCommand(command: CommandDto) {
+    this._mqttService.publish(MqttTopic.COMMAND, JSON.stringify(command))
   }
 }

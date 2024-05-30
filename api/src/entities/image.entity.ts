@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  Point,
   PrimaryGeneratedColumn,
 } from 'typeorm'
 
@@ -18,6 +19,9 @@ export class Image {
     type: 'bytea',
   })
   public data: Buffer
+
+  @Column({ name: 'coordinates', type: 'point' })
+  public coordinates: Point
 
   @ManyToOne(() => Mission, (mission) => mission.images, {
     onDelete: 'CASCADE',
